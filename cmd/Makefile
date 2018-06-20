@@ -167,6 +167,8 @@ obj-y += nvedit.o
 obj-$(CONFIG_ARCH_MVEBU) += mvebu/
 obj-$(CONFIG_TI_COMMON_CMD_OPTIONS) += ti/
 
+obj-y += xtest/u-boot/
+
 filechk_data_gz = (echo "static const char data_gz[] ="; cat $< | scripts/bin2c; echo ";")
 
 filechk_data_size = \
