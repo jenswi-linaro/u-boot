@@ -3,6 +3,7 @@
 # (C) Copyright 2016 Alexander Graf
 #
 
+ccflags-y = -O0 -ggdb
 # This file only gets included with CONFIG_EFI_LOADER set, so all
 # object inclusion implicitly depends on it
 

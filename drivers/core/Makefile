@@ -2,6 +2,7 @@
 #
 # Copyright (c) 2013 Google, Inc
 
+ccflags-y = -Og -ggdb
 obj-y	+= device.o fdtaddr.o lists.o root.o uclass.o util.o
 obj-$(CONFIG_DEVRES) += devres.o
 obj-$(CONFIG_$(SPL_)DM_DEVICE_REMOVE)	+= device-remove.o
