@@ -1,0 +1,5 @@
+config TEE_CLIENT_API
+	bool "TEE Client API"
+	depends on TEE
+	help
+	  Some description here
