@@ -1,0 +1,168 @@
+// SPDX-License-Identifier: GPL-2.0+
+/*
+ * Copyright (c) 2018 Linaro Limited
+ */
+
+#include <common.h>
+#include <dm.h>
+#include <tee.h>
+
+struct tee_uclass_priv {
+	struct list_head list_shm;
+};
+
+static const struct tee_driver_ops *tee_get_ops(struct udevice *dev)
+{
+	return device_get_ops(dev);
+}
+
+void tee_get_version(struct udevice *dev, struct tee_version_data *vers)
+{
+	tee_get_ops(dev)->get_version(dev, vers);
+}
+
+int tee_open_session(struct udevice *dev, struct tee_open_session_arg *arg,
+		     ulong num_param, struct tee_param *param)
+{
+	return tee_get_ops(dev)->open_session(dev, arg, num_param, param);
+}
+
+int tee_close_session(struct udevice *dev, u32 session)
+{
+	return tee_get_ops(dev)->close_session(dev, session);
+}
+
+
+int tee_invoke_func(struct udevice *dev, struct tee_invoke_arg *arg,
+		    ulong num_param, struct tee_param *param)
+{
+	return tee_get_ops(dev)->invoke_func(dev, arg, num_param, param);
+}
+
+struct tee_shm *__tee_shm_add(struct udevice *dev, ulong align, void *addr,				      ulong size, u32 flags)
+{
+	struct tee_shm *shm;
+	void *p = addr;
+
+	if (flags & TEE_SHM_ALLOC) {
+		if (align)
+			p = memalign(align, size);
+		else
+			p = malloc(size);
+	}
+	if (!p)
+		return NULL;
+
+	shm = calloc(1, sizeof(*shm));
+	if (!shm)
+		goto err;
+
+	shm->dev = dev;
+	shm->addr = p;
+	shm->size = size;
+	shm->flags = flags;
+
+	if ((flags & TEE_SHM_SEC_REGISTER) &&
+	    tee_get_ops(dev)->shm_register(dev, shm))
+		goto err;
+
+	if (flags & TEE_SHM_REGISTER) {
+		struct tee_uclass_priv *priv = dev_get_uclass_priv(dev);
+
+		list_add(&shm->link, &priv->list_shm);
+	}
+	return shm;
+err:
+	free(shm);
+	if (flags & TEE_SHM_ALLOC)
+		free(p);
+	return NULL;
+}
+
+struct tee_shm *tee_shm_alloc(struct udevice *dev, ulong size,
+			      u32 flags)
+{
+	u32 f = flags;
+
+	f |= TEE_SHM_SEC_REGISTER | TEE_SHM_REGISTER | TEE_SHM_ALLOC;
+	return __tee_shm_add(dev, 0, NULL, size, f);
+}
+
+struct tee_shm *tee_shm_register(struct udevice *dev, void *addr,
+                                 ulong size, u32 flags)
+{
+	u32 f = flags & ~TEE_SHM_ALLOC;
+
+	f |= TEE_SHM_SEC_REGISTER | TEE_SHM_REGISTER;
+	return __tee_shm_add(dev, 0, addr, size, f);
+}
+
+void tee_shm_free(struct tee_shm *shm)
+{
+	if (!shm)
+		return;
+
+	if (shm->flags & TEE_SHM_SEC_REGISTER)
+		tee_get_ops(shm->dev)->shm_unregister(shm->dev, shm);
+
+	if (shm->flags & TEE_SHM_REGISTER)
+		list_del(&shm->link);
+
+	if (shm->flags & TEE_SHM_ALLOC)
+		free(shm->addr);
+
+	free(shm);
+}
+
+struct udevice *tee_find_device(struct udevice *start,
+				int (*match)(struct tee_version_data * vers,
+					     const void *data),
+				const void *data,
+				struct tee_version_data *vers)
+{
+	struct udevice *dev = start;
+	struct tee_version_data lv;
+	struct tee_version_data *v = vers ? vers : &lv;
+
+	if (!dev)
+		uclass_first_device(UCLASS_TEE, &dev);
+
+	for (; dev; uclass_next_device(&dev)) {
+		tee_get_ops(dev)->get_version(dev, v);
+		if (match(v, data))
+			return dev;
+	}
+
+	return NULL;
+}
+
+static int tee_pre_probe(struct udevice *dev)
+{
+	struct tee_uclass_priv *priv = dev_get_uclass_priv(dev);
+
+	INIT_LIST_HEAD(&priv->list_shm);
+	return 0;
+}
+
+static int tee_pre_remove(struct udevice *dev)
+{
+	struct tee_uclass_priv *priv = dev_get_uclass_priv(dev);
+	struct tee_shm *shm;
+
+	while (!list_empty(&priv->list_shm)) {
+		shm = list_first_entry(&priv->list_shm, struct tee_shm, link);
+		debug("%s: freeing leftover shm %p (size %lu, flags %#x)\n",
+		      __func__, (void *)shm, shm->size, shm->flags);
+		tee_shm_free(shm);
+	}
+
+	return 0;
+}
+
+UCLASS_DRIVER(tee) = {
+	.id = UCLASS_TEE,
+	.name = "tee",
+	.per_device_auto_alloc_size = sizeof(struct tee_uclass_priv),
+	.pre_probe = tee_pre_probe,
+	.pre_remove = tee_pre_remove,
+};

@@ -17,6 +17,7 @@ obj-$(CONFIG_OF_LIVE) += of_live.o
 obj-$(CONFIG_CMD_DHRYSTONE) += dhry/
 obj-$(CONFIG_ARCH_AT91) += at91/
 obj-$(CONFIG_OPTEE) += optee/
+obj-$(CONFIG_TEE_CLIENT_API) += tee-client-api/
 
 obj-$(CONFIG_AES) += aes.o
 obj-y += charset.o
