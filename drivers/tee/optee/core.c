@@ -216,6 +216,7 @@ static void handle_rpc(struct udevice *dev, struct rpc_param *param,
 
 	switch (OPTEE_SMC_RETURN_GET_RPC_FUNC(param->a0)) {
 	case OPTEE_SMC_RPC_FUNC_ALLOC:
+		debug("OPTEE_SMC_RPC_FUNC_ALLOC\n");
 		shm = __tee_shm_add(dev, OPTEE_MSG_NONCONTIG_PAGE_SIZE, NULL,
 				    param->a1, TEE_SHM_ALLOC|TEE_SHM_REGISTER);
 		if (shm) {
@@ -231,6 +232,7 @@ static void handle_rpc(struct udevice *dev, struct rpc_param *param,
 		}
 		break;
 	case OPTEE_SMC_RPC_FUNC_FREE:
+		debug("OPTEE_SMC_RPC_FUNC_FREE\n");
 		shm = reg_pair_to_ptr(param->a1, param->a2);
 		if (!tee_shm_is_registered(shm, dev)) {
 			debug("OPTEE_SMC_RPC_FUNC_FREE: unknown shm %p\n",
@@ -240,8 +242,10 @@ static void handle_rpc(struct udevice *dev, struct rpc_param *param,
 		tee_shm_free(shm);
 		break;
 	case OPTEE_SMC_RPC_FUNC_FOREIGN_INTR:
+		debug("OPTEE_SMC_RPC_FUNC_FOREIGN_INTR\n");
 		break;
 	case OPTEE_SMC_RPC_FUNC_CMD:
+		debug("OPTEE_SMC_RPC_FUNC_CMD\n");
 		shm = reg_pair_to_ptr(param->a1, param->a2);
 		if (!tee_shm_is_registered(shm, dev)) {
 			debug("OPTEE_SMC_RPC_FUNC_CMD: unknown shm %p\n",

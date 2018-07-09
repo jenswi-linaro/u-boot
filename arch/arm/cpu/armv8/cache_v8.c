@@ -209,6 +209,8 @@ static void add_map(struct mm_region *map)
 	int level;
 	u64 *new_table;
 
+	debug("add_map virt 0x%llx, phys 0x%llx, size 0x%llx, attrs 0x%llx\n",
+		virt, phys, size, map->attrs);
 	while (size) {
 		pte = find_pte(virt, 0);
 		if (pte && (pte_type(pte) == PTE_TYPE_FAULT)) {
