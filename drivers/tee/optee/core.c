@@ -232,12 +232,22 @@ static void handle_rpc(struct udevice *dev, struct rpc_param *param,
 		break;
 	case OPTEE_SMC_RPC_FUNC_FREE:
 		shm = reg_pair_to_ptr(param->a1, param->a2);
+		if (!tee_shm_is_registered(shm, dev)) {
+			debug("OPTEE_SMC_RPC_FUNC_FREE: unknown shm %p\n",
+			      (void *)shm);
+			break;
+		}
 		tee_shm_free(shm);
 		break;
 	case OPTEE_SMC_RPC_FUNC_FOREIGN_INTR:
 		break;
 	case OPTEE_SMC_RPC_FUNC_CMD:
 		shm = reg_pair_to_ptr(param->a1, param->a2);
+		if (!tee_shm_is_registered(shm, dev)) {
+			debug("OPTEE_SMC_RPC_FUNC_CMD: unknown shm %p\n",
+			      (void *)shm);
+			break;
+		}
 		optee_suppl_cmd(dev, shm, page_list);
 		break;
 	default:
