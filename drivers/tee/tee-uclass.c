@@ -114,6 +114,18 @@ void tee_shm_free(struct tee_shm *shm)
 	free(shm);
 }
 
+bool tee_shm_is_registered(struct tee_shm *shm, struct udevice *dev)
+{
+	struct tee_uclass_priv *priv = dev_get_uclass_priv(dev);
+	struct tee_shm *s;
+
+	list_for_each_entry(s, &priv->list_shm, link)
+		if (s == shm)
+			return true;
+
+	return false;
+}
+
 struct udevice *tee_find_device(struct udevice *start,
 				int (*match)(struct tee_version_data * vers,
 					     const void *data),

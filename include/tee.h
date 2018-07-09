@@ -116,6 +116,7 @@ struct tee_shm *tee_shm_alloc(struct udevice *dev, ulong size, u32 flags);
 struct tee_shm *tee_shm_register(struct udevice *dev, void *addr,
                                  ulong length, u32 flags);
 void tee_shm_free(struct tee_shm *shm);
+bool tee_shm_is_registered(struct tee_shm *shm, struct udevice *dev);
 
 struct udevice *tee_find_device(struct udevice *start,
 				int (*match)(struct tee_version_data * vers,
