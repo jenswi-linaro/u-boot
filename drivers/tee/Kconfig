@@ -1,0 +1,8 @@
+# Generic Trusted Execution Environment Configuration
+config TEE
+	bool "Trusted Execution Environment support"
+	depends on ARM && (ARM64 || CPU_V7A)
+	select ARM_SMCCC
+	help
+	  This implements a generic interface towards a Trusted Execution
+	  Environment (TEE).
