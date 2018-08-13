@@ -5,3 +5,19 @@ config OPTEE
 	help
 	  This implements the OP-TEE Trusted Execution Environment (TEE)
 	  driver.
+
+if OPTEE
+
+menu "OP-TEE options"
+
+config OPTEE_TA_AVB
+	bool "Support AVB TA"
+	default y
+	help
+	  Enables support for the AVB Trusted Application (TA) in OP-TEE.
+	  The TA can support the "avb" subcommands "read_rb", "write"rb"
+	  and "is_unlocked".
+
+endmenu
+
+endif

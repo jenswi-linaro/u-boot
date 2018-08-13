@@ -48,6 +48,13 @@
 
 struct tee_driver_ops;
 
+struct tee_optee_ta_uuid {
+	u32 time_low;
+	u16 time_mid;
+	u16 time_hi_and_version;
+	u8 clock_seq_and_node[8];
+};
+
 struct tee_shm {
 	struct udevice *dev;
 	struct list_head link;
