@@ -604,6 +604,10 @@
 			};
 		};
 	};
+
+	sandbox_tee {
+		compatible = "sandbox,tee";
+	};
 };
 
 #include "sandbox_pmic.dtsi"
