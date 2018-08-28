@@ -732,7 +732,7 @@ void avb_ops_free(AvbOps *ops)
 {
 	struct AvbOpsData *ops_data;
 
-	if (ops)
+	if (!ops)
 		return;
 
 	ops_data = ops->user_data;
