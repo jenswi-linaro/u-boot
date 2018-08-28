@@ -1,8 +1,8 @@
 # Generic Trusted Execution Environment Configuration
 config TEE
 	bool "Trusted Execution Environment support"
-	depends on ARM && (ARM64 || CPU_V7A)
-	select ARM_SMCCC
+	depends on (ARM && (ARM64 || CPU_V7A)) || SANDBOX
+	select ARM_SMCCC if ARM
 	help
 	  This implements a generic interface towards a Trusted Execution
 	  Environment (TEE). A TEE is a trusted OS running in some secure
@@ -13,6 +13,14 @@ config TEE
 if TEE
 
 menu "TEE drivers"
+
+config SANDBOX_TEE
+	bool "Sandbox TEE emulator"
+	depends on SANDBOX
+	default y
+	help
+	  This emulates a generic TEE needed for testing including the AVB
+	  TA.
 
 source "drivers/tee/optee/Kconfig"
 
