@@ -76,7 +76,16 @@ static inline size_t get_sector_buf_size(void)
 
 static inline void *get_sector_buf(void)
 {
+#ifdef CONFIG_SANDBOX
+	static void *p;
+
+	if (!p)
+		p = avb_malloc_(get_sector_buf_size());
+
+	return p;
+#else
 	return (void *)CONFIG_FASTBOOT_BUF_ADDR;
+#endif
 }
 
 static inline bool is_buf_unaligned(void *buffer)
