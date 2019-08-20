@@ -1579,6 +1579,13 @@ config CMD_GETTIME
 	  milliseconds. See also the 'bootstage' command which provides more
 	  flexibility for boot timing.
 
+config CMD_MM_VERSION
+	bool "Get MM Version implemented in Secure world"
+	depends on ARM64
+	default n
+	help
+	  Command to communicate with Secure world to get MM version
+
 # TODO: rename to CMD_SLEEP
 config CMD_MISC
 	bool "sleep"
