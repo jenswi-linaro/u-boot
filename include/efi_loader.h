@@ -560,6 +560,11 @@ static inline int guidcmp(const void *g1, const void *g2)
 	return memcmp(g1, g2, sizeof(efi_guid_t));
 }
 
+static inline void *guidcpy(efi_guid_t *dst, const efi_guid_t *src)
+{
+	return memcpy(dst, src, sizeof(efi_guid_t));
+}
+
 /*
  * Use these to indicate that your code / data should go into the EFI runtime
  * section and thus still be available when the OS is running
