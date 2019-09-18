@@ -181,6 +181,17 @@ s32 utf_to_upper(const s32 code);
 size_t u16_strlen(const void *in);
 
 /**
+ * u16_strsize - count size of u16 string in bytes including the null character
+ *
+ * Counts the number of bytes occupied by a u16 string
+ *
+ * @in:			null terminated u16 string
+ * ReturnValue:		Bytes in a u16 string
+ *
+ */
+size_t u16_strsize(const void *in);
+
+/**
  * u16_strlen - count non-zero words
  *
  * This function matches wscnlen_s() if the -fshort-wchar compiler flag is set.
