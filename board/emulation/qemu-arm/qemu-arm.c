@@ -12,6 +12,8 @@
 #ifdef CONFIG_ARM64
 #include <asm/armv8/mmu.h>
 
+DECLARE_GLOBAL_DATA_PTR;
+
 static struct mm_region qemu_arm64_mem_map[] = {
 	{
 		/* Flash */
@@ -32,7 +34,13 @@ static struct mm_region qemu_arm64_mem_map[] = {
 		/* RAM */
 		.virt = 0x40000000UL,
 		.phys = 0x40000000UL,
-		.size = 255UL * SZ_1G,
+		.size = 2UL * SZ_1G,
+		.attrs = PTE_BLOCK_MEMTYPE(MT_NORMAL) |
+			 PTE_BLOCK_INNER_SHARE
+	}, {
+		.virt = 0xC0000000UL,
+		.phys = 0xC0000000UL,
+		.size = 1UL * SZ_1G,
 		.attrs = PTE_BLOCK_MEMTYPE(MT_NORMAL) |
 			 PTE_BLOCK_INNER_SHARE
 	}, {
@@ -73,15 +81,17 @@ int board_init(void)
 
 int dram_init(void)
 {
-	if (fdtdec_setup_mem_size_base() != 0)
-		return -EINVAL;
+	gd->ram_size = CONFIG_SYS_SDRAM_SIZE;
 
 	return 0;
 }
 
 int dram_init_banksize(void)
 {
-	fdtdec_setup_memory_banksize();
+#if defined(CONFIG_NR_DRAM_BANKS)
+	gd->bd->bi_dram[0].start = CONFIG_SYS_SDRAM_BASE;
+	gd->bd->bi_dram[0].size = get_effective_memsize();
+#endif
 
 	return 0;
 }
