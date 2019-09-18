@@ -1579,6 +1579,13 @@ config CMD_GETTIME
 	  milliseconds. See also the 'bootstage' command which provides more
 	  flexibility for boot timing.
 
+config CMD_MM_VAR
+	bool "Variable Get/Set via Management Mode interface"
+	depends on ARM64
+	default n
+	help
+	  Command to get/set variable from Secure world with MM interface
+
 config CMD_MM_VERSION
 	bool "Get MM Version implemented in Secure world"
 	depends on ARM64
