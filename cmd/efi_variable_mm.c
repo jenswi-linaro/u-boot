@@ -7,6 +7,9 @@
 #include <common.h>
 #include <command.h>
 #include <errno.h>
+#ifdef CONFIG_OPTEE
+#include <tee.h>
+#endif
 
 #include <efi.h>
 #include <efi_api.h>
@@ -22,6 +25,123 @@
 static efi_uintn_t max_var_size = 0x200;
 static uint8_t *var_buffer;
 
+#ifdef CONFIG_OPTEE
+
+/*
+ * Interface to the pseudo TA, which provides a communication channel with
+ * the Standalone MM SP (StMM) running at S-EL0.
+ */
+
+#define PTA_STMM_UUID { 0xed32d533, 0x99e6, 0x4209, {\
+			0x9c, 0xc0, 0x2d, 0x72, 0xcd, 0xd9, 0x98, 0xa7 } }
+
+/*
+ * Pass a buffer to Standalone MM SP
+ *
+ * [in/out]     memref[0]:	EFI Communication buffer
+ * [out]	value[1].a:	EFI return code
+ */
+#define PTA_STMM_COMMUNICATE	0
+
+
+
+struct mm_connection {
+	struct udevice *tee;
+	u32 session;
+};
+
+static struct mm_connection *get_connection(void)
+{
+	static struct mm_connection conn = { NULL, 0 };
+	struct udevice *tee = NULL;
+
+	while (!conn.tee) {
+		const struct tee_optee_ta_uuid uuid = PTA_STMM_UUID;
+		struct tee_open_session_arg arg;
+		int rc;
+
+		tee = tee_find_device(tee, NULL, NULL, NULL);
+		if (!tee)
+			return NULL;
+
+		memset(&arg, 0, sizeof(arg));
+		tee_optee_ta_uuid_to_octets(arg.uuid, &uuid);
+		rc = tee_open_session(tee, &arg, 0, NULL);
+		if (!rc) {
+			conn.tee = tee;
+			conn.session = arg.session;
+		}
+	}
+
+	return &conn;
+}
+
+static efi_status_t efi_mm_communicate(void **comm_buf, ulong *dsize)
+{
+	ulong buf_size;
+	efi_status_t ret;
+	mm_communicate_header_t *mm_hdr;
+	struct mm_connection *conn;
+	struct tee_invoke_arg arg;
+	struct tee_param param[2];
+	struct tee_shm *shm = NULL;
+	int rc;
+
+	if (!comm_buf || !dsize)
+		return EFI_INVALID_PARAMETER;
+
+	mm_hdr = *comm_buf;
+	buf_size = mm_hdr->message_len + sizeof(efi_guid_t) + sizeof(size_t);
+
+	if (*dsize != buf_size)
+		return EFI_INVALID_PARAMETER;
+
+	conn = get_connection();
+	if (!conn)
+		return EFI_UNSUPPORTED;
+
+	if (tee_shm_register(conn->tee, *comm_buf, buf_size, 0, &shm))
+		return EFI_UNSUPPORTED;
+
+	memset(&arg, 0, sizeof(arg));
+	arg.func = PTA_STMM_COMMUNICATE;
+	arg.session = conn->session;
+
+	memset(param, 0, sizeof(param));
+	param[0].attr = TEE_PARAM_ATTR_TYPE_MEMREF_INOUT;
+	param[0].u.memref.size = buf_size;
+	param[0].u.memref.shm = shm;
+	param[1].attr = TEE_PARAM_ATTR_TYPE_VALUE_OUTPUT;
+
+	rc = tee_invoke_func(conn->tee, &arg, 2, param);
+	tee_shm_free(shm);
+	if (rc)
+		return EFI_INVALID_PARAMETER;
+
+	switch (param[1].u.value.a) {
+	case MM_RET_SUCCESS:
+		ret = EFI_SUCCESS;
+		break;
+
+	case MM_RET_INVALID_PARAMS:
+		ret = EFI_INVALID_PARAMETER;
+		break;
+
+	case MM_RET_DENIED:
+		ret = EFI_ACCESS_DENIED;
+		break;
+
+	case MM_RET_NO_MEMORY:
+		ret = EFI_OUT_OF_RESOURCES;
+		break;
+
+	default:
+		ret = EFI_ACCESS_DENIED;
+	}
+
+	return ret;
+}
+#else
 static efi_status_t efi_mm_communicate(void **comm_buf, ulong *dsize)
 {
 	ulong buf_size;
@@ -69,6 +189,7 @@ static efi_status_t efi_mm_communicate(void **comm_buf, ulong *dsize)
 
 	return ret;
 }
+#endif
 
 static efi_status_t mm_communicate(efi_uintn_t dsize)
 {
